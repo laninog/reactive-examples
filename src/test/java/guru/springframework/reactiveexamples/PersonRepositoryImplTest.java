@@ -1,6 +1,7 @@
 package guru.springframework.reactiveexamples;
 
 import guru.springframework.reactiveexamples.domain.Person;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -9,6 +10,7 @@ import reactor.test.StepVerifier;
 
 import java.util.List;
 
+@Slf4j
 class PersonRepositoryImplTest {
 
     PersonRepositoryImpl personRepository;
@@ -24,7 +26,7 @@ class PersonRepositoryImplTest {
 
         Person person = personMono.block();
 
-        System.out.println(person.toString());
+        log.info(person.toString());
     }
 
     @Test
@@ -34,7 +36,7 @@ class PersonRepositoryImplTest {
         StepVerifier.create(personMono).expectNextCount(1).verifyComplete();
 
         personMono.subscribe(person -> {
-            System.out.println(person.toString());
+            log.info(person.toString());
         });
     }
 
@@ -54,11 +56,11 @@ class PersonRepositoryImplTest {
         Mono<Person> personMono = personRepository.getById(1);
 
         personMono.map(person -> {
-            System.out.println(person.toString());
+            log.info(person.toString());
 
             return person.getFirstName();
         }).subscribe(firstName -> {
-            System.out.println("from map: " + firstName);
+            log.info("from map: " + firstName);
         });
     }
 
@@ -89,9 +91,9 @@ class PersonRepositoryImplTest {
         Mono<List<Person>> personListMono = personFlux.collectList();
 
         personListMono.subscribe(list -> {
-           list.forEach(person -> {
-               System.out.println(person.toString());
-           });
+            list.forEach(person -> {
+                System.out.println(person.toString());
+            });
         });
     }
 
@@ -130,42 +132,29 @@ class PersonRepositoryImplTest {
         Mono<Person> personMono = personFlux.filter(person -> person.getId() == id).single();
 
         personMono.doOnError(throwable -> {
-            System.out.println("I went boom");
-        }).onErrorReturn(Person.builder().id(id).build())
-                .subscribe(person -> {
-            System.out.println(person.toString());
-        });
+                System.out.println("I went boom");
+            }).onErrorReturn(Person.builder().id(id).firstName("New").lastName("New").build())
+            .subscribe(person -> {
+                System.out.println(person.toString());
+            });
     }
+
+    @Test
+    void testGetPersonById() {
+        Mono<Person> personMono = personRepository.getById(1);
+
+        StepVerifier.create(personMono).expectNextCount(1).verifyComplete();
+
+        personMono.subscribe(p -> log.info(p.toString()));
+    }
+
+    @Test
+    void testGetPersonByIdEmpty() {
+        Mono<Person> personMono = personRepository.getById(100);
+
+        StepVerifier.create(personMono).expectNextCount(1).verifyComplete();
+
+        personMono.subscribe(p -> log.info(p.toString()));
+    }
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
